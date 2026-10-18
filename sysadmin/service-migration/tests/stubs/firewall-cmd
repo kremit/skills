@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+[[ $1 == --state ]] && echo "not running"
+exit 252

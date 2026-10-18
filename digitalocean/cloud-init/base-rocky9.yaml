@@ -1,0 +1,32 @@
+hostname: dev-droplet
+manage_etc_hosts: true
+
+users:
+  - default    # MUST be first - preserves image default user + DO metadata SSH keys
+  - name: dev
+    groups: wheel
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    lock_passwd: true
+
+package_update: true
+package_upgrade: true    # required: DO base images drift behind current repos; partial install via `packages:` can pull newer openssl-libs and strand sshd (ABI mismatch, no SSH)
+
+packages:
+  - vim
+  - git
+  - curl
+  - wget
+  - tar
+  - firewalld
+  - policycoreutils-python-utils
+
+runcmd:
+  - [systemctl, enable, --now, firewalld]
+  - [firewall-cmd, --add-service=ssh, --permanent]
+  - [firewall-cmd, --reload]
+
+write_files:
+  - path: /etc/motd
+    content: |
+      ---- dev droplet: managed by digitalocean skill ----

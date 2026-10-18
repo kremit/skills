@@ -1,0 +1,14 @@
+Id=fakesvc.service
+LoadState=loaded
+ActiveState=active
+SubState=running
+FragmentPath=/usr/lib/systemd/system/fakesvc.service
+DropInPaths=/etc/systemd/system/fakesvc.service.d/override.conf
+ExecStart={ path=/usr/sbin/fakesvc ; argv[]=/usr/sbin/fakesvc -f ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }
+User=fakesvc
+Group=fakesvc
+WorkingDirectory=/
+StateDirectory=fakesvc
+Requires=
+Wants=network-online.target
+MainPID=4242

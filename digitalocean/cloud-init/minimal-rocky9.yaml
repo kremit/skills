@@ -1,0 +1,7 @@
+hostname: dev-droplet
+manage_etc_hosts: true
+
+write_files:
+  - path: /etc/motd
+    content: |
+      ---- dev droplet: managed by digitalocean skill ----

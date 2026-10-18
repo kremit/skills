@@ -1,0 +1,7 @@
+[Unit]
+Description=Fake service for tests
+
+[Service]
+ExecStart=/usr/sbin/fakesvc -f
+User=fakesvc
+StateDirectory=fakesvc

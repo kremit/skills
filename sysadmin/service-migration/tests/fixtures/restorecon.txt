@@ -1,0 +1,2 @@
+Would relabel /var/lib/fakesvc/store/data.db from unconfined_u:object_r:default_t:s0 to system_u:object_r:fakesvc_var_lib_t:s0
+restorecon reset /opt/fakesvc-archive context unconfined_u:object_r:usr_t:s0->system_u:object_r:fakesvc_archive_t:s0

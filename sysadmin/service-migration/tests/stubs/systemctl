@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# test stub: systemctl show <unit> and is-failed --quiet <unit>
+case $1 in
+	show)
+		f="$STUB_FIXTURES/systemctl-show-${2%.service}.txt"
+		if [[ -f $f ]]; then cat "$f"; else echo "LoadState=not-found"; fi
+		;;
+	is-failed) [[ " ${STUB_FAILED:-} " == *" ${*: -1} "* ]] ;;
+esac

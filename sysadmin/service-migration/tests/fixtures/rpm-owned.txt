@@ -1,0 +1,3 @@
+/usr/sbin/fakesvc
+/usr/lib/systemd/system/fakesvc.service
+/etc/fakesvc/fakesvc.conf

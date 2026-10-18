@@ -1,0 +1,24 @@
+x-extends: base-rocky9
+
+packages:
+  - httpd
+  - mod_ssl
+
+runcmd:
+  - [bash, -c, "curl -fsSL https://rpm.nodesource.com/setup_lts.x | bash -"]
+  - [dnf, install, -y, nodejs]
+  - [systemctl, enable, --now, httpd]
+  - [firewall-cmd, --add-service=http, --permanent]
+  - [firewall-cmd, --add-service=https, --permanent]
+  - [firewall-cmd, --reload]
+  - [restorecon, -Rv, /var/www/html]
+
+write_files:
+  - path: /var/www/html/index.html
+    owner: root:root
+    permissions: "0644"
+    content: |
+      <!doctype html>
+      <title>node-apache droplet</title>
+      <h1>Ready.</h1>
+      <p>Replace /var/www/html/index.html with your static site.</p>

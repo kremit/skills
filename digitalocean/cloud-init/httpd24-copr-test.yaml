@@ -1,0 +1,34 @@
+x-extends: base-rocky9
+
+packages:
+  - dnf-plugins-core
+
+runcmd:
+  - [dnf, install, -y, epel-release]
+  - [dnf, config-manager, --set-enabled, crb]
+  - [dnf, copr, enable, -y, kremit/httpd24]
+  - [dnf, install, -y, httpd, mod_ssl, mod_http2]
+  - [systemctl, enable, --now, httpd]
+  - [firewall-cmd, --add-service=http, --permanent]
+  - [firewall-cmd, --add-service=https, --permanent]
+  - [firewall-cmd, --reload]
+  - [restorecon, -Rv, /var/www/html, /etc/httpd]
+  - [bash, -c, "rpm -q httpd mod_http2 mod_ssl > /root/installed-versions.txt 2>&1"]
+  - [bash, -c, "sleep 2; curl -sk --http2 -D /root/http2-test-headers.txt https://localhost/ -o /root/http2-test-body.html; echo exit:$? >> /root/http2-test-headers.txt"]
+
+write_files:
+  - path: /etc/httpd/conf.d/http2-test.conf
+    owner: root:root
+    permissions: "0644"
+    content: |
+      Protocols h2 h2c http/1.1
+      LogLevel http2:info
+
+  - path: /var/www/html/index.html
+    owner: root:root
+    permissions: "0644"
+    content: |
+      <!doctype html>
+      <title>httpd24 COPR mod_http2 test</title>
+      <h1>mod_http2 test droplet</h1>
+      <p>httpd + mod_http2 built from kremit/httpd24 COPR, epel-9-x86_64 target.</p>

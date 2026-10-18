@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+case " $* " in
+	*" established "*) cat "$STUB_FIXTURES/ss-estab.txt" ;;
+	*) cat "$STUB_FIXTURES/${STUB_SS_LISTEN:-ss-listen.txt}" ;;
+esac

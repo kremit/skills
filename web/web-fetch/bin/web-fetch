@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# web-fetch: thin shim so the skill symlink can call the node entry
+exec node "$(dirname "$(readlink -f "$0")")/../lib/main.mjs" "$@"

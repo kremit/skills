@@ -1,0 +1,4 @@
+tcp   LISTEN 0      128        127.0.0.1:8025      0.0.0.0:*    users:(("fakesvc",pid=4242,fd=5))
+tcp   LISTEN 0      128          0.0.0.0:22        0.0.0.0:*    users:(("sshd",pid=900,fd=3))
+tcp LISTEN 0 128 :::8025 :::* users:(("fakesvc",pid=4242,fd=6))
+udp   UNCONN 0      0            0.0.0.0:45123     0.0.0.0:*    users:(("fakesvc",pid=4242,fd=9))

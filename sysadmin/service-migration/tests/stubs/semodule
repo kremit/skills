@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+printf '400 fakesvc_local pp\n100 base         pp\n'

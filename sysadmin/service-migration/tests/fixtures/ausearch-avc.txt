@@ -1,0 +1,3 @@
+----
+time->Thu Sep 24 10:00:00 2026
+type=AVC msg=audit(1790244000.123:456): avc:  denied  { read } for  pid=4242 comm="fakesvc" name="data.db" dev="vda1" ino=1234 scontext=system_u:system_r:fakesvc_t:s0 tcontext=unconfined_u:object_r:default_t:s0 tclass=file permissive=0

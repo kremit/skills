@@ -1,0 +1,20 @@
+x-extends: base-al2023
+
+packages:
+  - httpd
+  - mod_ssl
+  - nodejs
+  - npm
+
+runcmd:
+  - [systemctl, enable, --now, httpd]
+
+write_files:
+  - path: /var/www/html/index.html
+    owner: root:root
+    permissions: "0644"
+    content: |
+      <!doctype html>
+      <title>node-httpd instance</title>
+      <h1>Ready.</h1>
+      <p>Replace /var/www/html/index.html with your static site.</p>

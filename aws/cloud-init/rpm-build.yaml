@@ -1,0 +1,22 @@
+x-extends: base-al2023
+
+packages:
+  - rpm-build
+  - rpmdevtools
+  - rpmlint
+  - mock
+  - createrepo
+  - gcc
+  - make
+
+runcmd:
+  - [usermod, -aG, mock, ec2-user]
+  - [sudo, -u, ec2-user, rpmdev-setuptree]
+
+write_files:
+  - path: /home/ec2-user/.rpmmacros
+    owner: ec2-user:ec2-user
+    permissions: "0644"
+    content: |
+      %_topdir %(echo $HOME)/rpmbuild
+      %packager ec2-user@instance

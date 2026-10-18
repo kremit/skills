@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# test stub: only booleans carry a local customization
+if [[ "$1 $2" == "boolean -l" ]]; then
+	printf 'SELinux boolean                State  Default Description\n\n'
+	printf 'fakesvc_can_relay              (on   ,   on)  Allow fakesvc to relay\n'
+else
+	printf 'SELinux %s   type   Context\n\n' "$1"
+fi

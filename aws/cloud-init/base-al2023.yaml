@@ -1,0 +1,15 @@
+hostname: dev-instance
+manage_etc_hosts: true
+
+package_update: true
+package_upgrade: false
+
+packages:
+  - vim
+  - git
+  - curl
+  - wget
+  - tar
+
+runcmd:
+  - [bash, -c, "echo 'dev instance ready' > /etc/motd"]

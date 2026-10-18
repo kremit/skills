@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+mailsubjects/work/
+tmp/
+node_modules/

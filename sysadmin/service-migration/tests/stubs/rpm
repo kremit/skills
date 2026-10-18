@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# test stub: rpm -qf, -q, -V
+case $1 in
+	-qf)
+		path=${*: -1}
+		if grep -qxF "$path" "$STUB_FIXTURES/rpm-owned.txt"; then
+			echo fakesvc
+		else
+			echo "file $path is not owned by any package"
+			exit 1
+		fi
+		;;
+	-q) printf '1.2-3.el9' ;;
+	-V) cat "$STUB_FIXTURES/rpm-V.txt" ;;
+esac

@@ -1,0 +1,24 @@
+x-extends: base-rocky9
+
+packages:
+  - rpm-build
+  - rpmdevtools
+  - rpmlint
+  - mock
+  - createrepo_c
+  - gcc
+  - make
+  - dnf-plugins-core
+
+runcmd:
+  - [dnf, config-manager, --set-enabled, crb]
+  - [usermod, -aG, mock, dev]
+  - [sudo, -u, dev, rpmdev-setuptree]
+
+write_files:
+  - path: /home/dev/.rpmmacros
+    owner: dev:dev
+    permissions: "0644"
+    content: |
+      %_topdir %(echo $HOME)/rpmbuild
+      %packager dev@droplet

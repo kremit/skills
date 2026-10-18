@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# test stub: -ts fails like a locale-mismatched date under LC_ALL=C;
+# without --input-logs real ausearch reads (empty) stdin and finds nothing
+logs=0
+for a in "$@"; do
+	[[ $a == -ts ]] && { echo 'Error parsing start date' >&2; exit 1; }
+	[[ $a == --input-logs ]] && logs=1
+done
+if [[ -n ${STUB_AVC:-} && $logs == 1 ]]; then cat "$STUB_FIXTURES/ausearch-avc.txt"; else echo '<no matches>'; exit 1; fi
