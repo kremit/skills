@@ -10,6 +10,7 @@ including expiration mechanics and automation hooks.
 
 ## HIGH-LEVEL FLOW (ASCII DIAGRAM)
 
+```text
                  DAILY FLOW
                  ----------
   PARKING LOT  -->  PAUSED STACK  -->  TODAY – ACTIVE  -->  DONE/CONTEXT
@@ -20,11 +21,13 @@ including expiration mechanics and automation hooks.
       |
       v
   (Expire after 7 days if not promoted)
+```
 
 ## WEEKLY RHYTHM
 
 ### FRIDAY – EXTENDED CLOSE (20–30 min)
 
+```text
   TODAY – ACTIVE
         |
         v
@@ -42,10 +45,12 @@ including expiration mechanics and automation hooks.
   Quick skim of PARKING LOT
         |
         +-- Delete obvious junk
+```
 
 
 ### SUNDAY / MONDAY – INTAKE + BACKLOG REVIEW (30–45 min)
 
+```text
   PARKING LOT (Intake)
         |
         Light scan daily; heavy review Sunday/Monday
@@ -77,6 +82,7 @@ including expiration mechanics and automation hooks.
         +-- Strategic (keep)
         +-- Interesting but non-actionable -> Move to Junkyard Board
         +-- Dead / unrealistic -> DELETE
+```
 
 
 ## EXPIRATION MECHANICS
