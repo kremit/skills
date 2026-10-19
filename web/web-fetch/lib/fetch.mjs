@@ -9,7 +9,12 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const MAX_REDIRECTS = 3;
 
 const isHtml = (ct) => /html/i.test(ct);
-const isRawText = (ct) => !isHtml(ct) && /^text\/|json|javascript|xml/i.test(ct);
+// text types returned as-is; +json/+xml suffixes, but not binaries like vnd.openxmlformats
+const RAW_TEXT = /^text\/|^application\/(?:x-)?(?:json|ndjson|jsonl|json-seq|javascript|ecmascript|xml|xml-dtd|link-format|yaml|toml|csv|sql|graphql)\b|\+(?:json|xml)\b/i;
+// raw text types both browsers render in place; others get offered as downloads
+const NATIVE_TEXT = /^(?:text\/(?:plain|xml|css|javascript)|application\/(?:json|xml|javascript))\b/i;
+const isRawText = (ct) => !isHtml(ct) && RAW_TEXT.test(ct);
+const isForeignText = (ct) => isRawText(ct) && !NATIVE_TEXT.test(ct);
 
 export async function detectChallenge(page) {
     try {
@@ -69,6 +74,38 @@ async function purgeDownloads(downloadsDir) {
     }
 }
 
+/**
+ * Chrome: serve main-frame text responses it would only download (link-format,
+ * ndjson, yaml...) as text/plain so the page commits; returns the original types.
+ */
+async function serveForeignTextAsPlain(page) {
+    const seen = new Map();
+    const cdp = await page.createCDPSession();
+    cdp.on('Fetch.requestPaused', async (ev) => {
+        const { requestId, responseStatusCode: code, responseHeaders: headers = [] } = ev;
+        try {
+            const ctHeader = headers.find((h) => h.name.toLowerCase() === 'content-type');
+            const ct = ctHeader ? ctHeader.value : '';
+            if (ev.frameId === page.mainFrame()._id && code >= 200 && code < 300 && isForeignText(ct)) {
+                const { body, base64Encoded } = await cdp.send('Fetch.getResponseBody', { requestId });
+                const charset = /charset=[^;]+/i.exec(ct);
+                const plain = headers.filter((h) => h !== ctHeader).concat({ name: 'Content-Type', value: `text/plain; ${charset ? charset[0] : 'charset=utf-8'}` });
+                seen.set(ev.request.url, ct);
+                await cdp.send('Fetch.fulfillRequest', {
+                    requestId, responseCode: code, responseHeaders: plain,
+                    body: base64Encoded ? body : Buffer.from(body).toString('base64'),
+                });
+                return;
+            }
+        } catch {
+            // fall through and let the response pass untouched
+        }
+        await cdp.send('Fetch.continueRequest', { requestId }).catch(() => {});
+    });
+    await cdp.send('Fetch.enable', { patterns: [{ resourceType: 'Document', requestStage: 'Response' }] });
+    return seen;
+}
+
 /** Navigate, wait, handle challenges, check sentinels, extract. */
 export async function fetchPage(browser, url, opts = {}) {
     const {
@@ -89,6 +126,16 @@ export async function fetchPage(browser, url, opts = {}) {
     const unsupported = new Promise((resolve) => {
         unsupportedResolve = resolve;
     });
+    let foreignResolve;
+    const foreign = new Promise((resolve) => {
+        foreignResolve = resolve;
+    });
+    // page.url() stays about:blank when a response never commits
+    const finalUrl = () => {
+        const u = page.url();
+        if (u && u !== 'about:blank') return u;
+        return navResponse ? navResponse.url() : url;
+    };
     page.on('response', (r) => {
         try {
             if (r.request().isNavigationRequest() && r.frame() === page.mainFrame()) {
@@ -96,28 +143,33 @@ export async function fetchPage(browser, url, opts = {}) {
                 navResponse = r;
                 const ct = r.headers()['content-type'] || '';
                 if (ct && !isHtml(ct) && !isRawText(ct)) unsupportedResolve(ct);
+                if (isForeignText(ct)) foreignResolve(r);
             }
         } catch {
             // frame detached mid-navigation
         }
     });
     try {
+        let plainServed = new Map();
         if (engine === 'chrome') {
             const ua = await browser.userAgent();
             if (ua.includes('HeadlessChrome')) await page.setUserAgent(ua.replace('HeadlessChrome', 'Chrome'));
+            plainServed = await serveForeignTextAsPlain(page).catch(() => plainServed);
         }
         let response;
         try {
             // domcontentloaded always: a non-renderable response never fires load,
             // and the unsupported race below catches it before that can hang.
+            // Firefox never commits foreign text either, but its body stays readable.
             response = await Promise.race([
                 page.goto(url, { waitUntil: 'domcontentloaded', timeout: left() }),
                 unsupported.then((ct) => {
                     throw Object.assign(new Error(ct), { unsupportedType: ct });
                 }),
+                ...(engine === 'firefox' ? [foreign] : []),
             ]);
         } catch (e) {
-            result.final_url = page.url();
+            result.final_url = finalUrl();
             if (!e.unsupportedType && /ERR_ABORTED/.test(e.message)) {
                 // a non-renderable response aborts the load; its content-type event can trail the abort
                 const ct = await Promise.race([unsupported, sleep(1000).then(() => null)]);
@@ -134,16 +186,16 @@ export async function fetchPage(browser, url, opts = {}) {
         }
         const hops = response ? response.request().redirectChain().length : 0;
         if (hops > MAX_REDIRECTS) {
-            result.final_url = page.url();
+            result.final_url = finalUrl();
             result.status = response.status();
             result.error = `navigation: too many redirects (${hops} > ${MAX_REDIRECTS})`;
             return result;
         }
-        const ct = (response && response.headers()['content-type']) || '';
+        const ct = (response && (plainServed.get(response.url()) || response.headers()['content-type'])) || '';
         result.content_type = ct || null;
         if (ct && isRawText(ct)) {
             result.status = response.status();
-            result.final_url = page.url();
+            result.final_url = finalUrl();
             result.content = await rawBody(page, response);
             if ([401, 403, 429].includes(result.status)) result.blocked = true;
             if (result.content.length > maxChars) {
@@ -156,7 +208,7 @@ export async function fetchPage(browser, url, opts = {}) {
         if (ct && !isHtml(ct)) {
             // safety net: a type that slipped past the pre-goto race
             result.status = response.status();
-            result.final_url = page.url();
+            result.final_url = finalUrl();
             result.error = `unsupported content-type: ${ct}`;
             return result;
         }
@@ -238,7 +290,7 @@ export async function fetchPage(browser, url, opts = {}) {
                 ex = await prep();
             } catch (e2) {
                 result.error = result.error || `extract: ${e2.message}`;
-                result.final_url = page.url();
+                result.final_url = finalUrl();
                 return result;
             }
         }
@@ -267,7 +319,7 @@ export async function fetchPage(browser, url, opts = {}) {
                 if (!result.error) result.error = `screenshot: ${e.message}`;
             }
         }
-        result.final_url = page.url();
+        result.final_url = finalUrl();
         return result;
     } finally {
         await closePage(page);

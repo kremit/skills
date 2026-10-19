@@ -124,12 +124,33 @@ for (const engine of ['chrome', 'firefox']) {
             assert.match(feed.content, /<rss/);
         });
 
+        test('link-format and ndjson come back as raw text at the real URL', async () => {
+            const tm = await go('/timemap');
+            assert.equal(tm.error, null);
+            assert.equal(tm.final_url, srv.base + '/timemap');
+            assert.deepEqual([tm.status, tm.content_type], [200, 'application/link-format']);
+            assert.match(tm.content, /rel="memento".*LINKFORMATVALUE/);
+
+            const nd = await go('/events.ndjson');
+            assert.equal(nd.error, null);
+            assert.equal(nd.final_url, srv.base + '/events.ndjson');
+            assert.equal(JSON.parse(nd.content.split('\n')[0]).v, 'NDJSONVALUE');
+        });
+
+        test('unsupported responses report the real final_url, not about:blank', async () => {
+            const r = await go('/sheet.xlsx', { downloadsDir: join(dir, 'downloads') });
+            assert.match(r.error, /^unsupported content-type: application\/vnd\.openxmlformats/);
+            assert.equal(r.final_url, srv.base + '/sheet.xlsx');
+            assert.equal(r.content, '');
+        });
+
         test('binary responses are unsupported and never downloaded', async () => {
             const marker = Buffer.from('\u0000\u0001binary', 'utf8');
             const downloadsDir = join(dir, 'downloads');
             const started = Date.now();
             const r = await go('/bin', { downloadsDir });
             assert.match(r.error, /^unsupported content-type: application\/octet-stream/);
+            assert.equal(r.final_url, srv.base + '/bin');
             assert.ok(Date.now() - started < 10000);
             if (engine === 'firefox') {
                 // Firefox writes its own profile files lazily, so scan content rather than diff the file set

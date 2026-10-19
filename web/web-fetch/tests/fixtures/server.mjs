@@ -46,6 +46,9 @@ const ROUTES = {
     '/feed.xml': [200, 'text/xml', '<?xml version="1.0"?><rss><channel><title>FEEDTITLE</title></channel></rss>'],
     '/bin': [200, 'application/octet-stream', '\u0000\u0001binary'],
     '/stalled.html': [200, 'text/html', STALLED],
+    '/timemap': [200, 'application/link-format', '<https://example.com/a>; rel="original",\n<https://archive.example/20240101/https://example.com/a>; rel="memento"; datetime="Mon, 01 Jan 2024 00:00:00 GMT" LINKFORMATVALUE\n'],
+    '/events.ndjson': [200, 'application/x-ndjson', '{"n":1,"v":"NDJSONVALUE"}\n{"n":2}\n'],
+    '/sheet.xlsx': [200, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'PK\u0003\u0004binary'],
     '/doc.pdf': [200, 'application/pdf', '%PDF-1.4\n%fixture only, not a real PDF\n'],
 };
 
