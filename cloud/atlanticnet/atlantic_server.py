@@ -4,9 +4,9 @@
 The Atlantic.net API has no native cloud-init or tag support, so this skill
 bootstraps post-creation by SSH-ing to the new server and running a bash
 script (either a shipped preset in bootstrap/ or a BYO path). TTL tracking
-uses the shared cloudlib manifest since server-side tags are not available.
+uses the shared lib/cloud manifest since server-side tags are not available.
 
-Deps: PyYAML (for cloudlib compatibility), stdlib only otherwise.
+Deps: PyYAML (for lib/cloud compatibility), stdlib only otherwise.
 Auth: ATLANTIC_ACCESS_KEY_ID, ATLANTIC_SECRET_KEY.
 Docs: https://www.atlantic.net/docs/api/
 """
@@ -24,8 +24,8 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from cloudlib import HTTPError, http_json, manifest, parse_ttl
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "lib"))
+from cloud import HTTPError, http_json, manifest, parse_ttl
 
 API = "https://cloudapi.atlantic.net/"
 API_VERSION = "2010-12-30"

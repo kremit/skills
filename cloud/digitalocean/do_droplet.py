@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """DigitalOcean droplet skill CLI.
 
-Uses shared helpers from ../cloudlib for HTTP, TTL, and cloud-init logic.
+Uses shared helpers from ../../lib/cloud for HTTP, TTL, and cloud-init logic.
 Provider-specific concerns (auth, request shape, metadata service URL,
 response parsing) live here.
 
@@ -17,8 +17,8 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from cloudlib import (
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "lib"))
+from cloud import (
     HTTPError,
     TAG_MARKER,
     http_json,

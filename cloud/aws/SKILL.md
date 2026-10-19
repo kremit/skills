@@ -32,7 +32,7 @@ Test:
 pip install boto3 pyyaml
 ```
 
-Also imports from the sibling `../cloudlib` package for HTTP/TTL/cloud-init helpers.
+Also imports from the shared `../../lib/cloud` package for HTTP/TTL/cloud-init helpers.
 
 ## Recipes
 
@@ -151,7 +151,7 @@ cloud-init/
   base-al2023.yaml       # AL2023 baseline
   rpm-build.yaml         # extends base + RPM tooling
   node-httpd.yaml        # extends base + httpd + nodejs
-../cloudlib/             # shared helpers (HTTP, TTL, cloud-init, manifest)
+../../lib/cloud/         # shared helpers (HTTP, TTL, cloud-init, manifest)
 ```
 
 ## When to reach for Terraform instead

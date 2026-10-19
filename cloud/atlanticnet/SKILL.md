@@ -40,10 +40,10 @@ Test:
 ## Dependencies
 
 ```bash
-pip install pyyaml    # cloudlib uses it; stdlib covers the rest
+pip install pyyaml    # lib/cloud uses it; stdlib covers the rest
 ```
 
-Also imports from the sibling `../cloudlib` package.
+Also imports from the shared `../../lib/cloud` package.
 
 You also need **an SSH key registered on Atlantic.net** (`list-keys` to see ids, or register via the portal) and the matching **private key locally** for the post-create bootstrap step.
 
@@ -144,7 +144,7 @@ bootstrap/
   base-rocky9.sh         # Rocky 9 baseline (bash)
   rpm-build.sh           # extends base + RPM tooling
   node-apache.sh         # extends base + httpd + Node LTS
-../cloudlib/             # shared helpers (HTTP, TTL, cloud-init, manifest)
+../../lib/cloud/         # shared helpers (HTTP, TTL, cloud-init, manifest)
 ```
 
 ## Why this skill is justified vs Terraform for Atlantic.net specifically

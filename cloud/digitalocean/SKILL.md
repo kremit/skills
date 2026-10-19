@@ -72,7 +72,7 @@ API tokens are still scoped to **Teams**, not Projects. The `--project` flag is 
 pip install pyyaml    # only runtime dep
 ```
 
-The skill also imports from the sibling `cloudlib/` package in this repo (`../cloudlib`), which bundles shared HTTP/TTL/cloud-init helpers used by the AWS and Atlantic.net skills too. No install needed - the script adds its parent dir to `sys.path`.
+The skill also imports from the shared `lib/cloud/` package in this repo (`../../lib/cloud`), which bundles shared HTTP/TTL/cloud-init helpers used by the AWS and Atlantic.net skills too. No install needed - the script adds its parent dir to `sys.path`.
 
 ## Token scoping
 
@@ -224,5 +224,5 @@ cloud-init/
   base-rocky9.yaml       # Rocky 9 baseline
   rpm-build.yaml         # extends base + RPM tooling
   node-apache.yaml       # extends base + httpd + Node LTS
-../cloudlib/             # shared helpers (HTTP, TTL, cloud-init) used by sibling provider skills
+../../lib/cloud/         # shared helpers (HTTP, TTL, cloud-init) used by sibling provider skills
 ```

@@ -100,7 +100,7 @@ Show the user the plan path and a 2--4-line summary. Before Phase 3, ask which d
 **Droplet (default)** uses the sibling `digitalocean` skill. Rocky images run SELinux enforcing, which is what makes this dry run worth doing.
 
 ```bash
-DO="$SKILL_DIR/../../digitalocean/do_droplet.py"
+DO="$SKILL_DIR/../../cloud/digitalocean/do_droplet.py"
 "$DO" --project Testing create --name mig-<service> --region nyc3 --size s-1vcpu-2gb \
     --preset base-rocky9 --ssh-key <id> --ttl 4h
 ```

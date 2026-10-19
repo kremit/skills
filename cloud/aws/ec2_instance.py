@@ -17,8 +17,8 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from cloudlib import (
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "lib"))
+from cloud import (
     TAG_MARKER,
     load_preset,
     merge_cloud_init,
