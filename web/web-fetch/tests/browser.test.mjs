@@ -74,7 +74,7 @@ for (const engine of ['chrome', 'firefox']) {
             assert.equal(r.error, null);
             assert.equal(r.pdf.style, 'reader');
             assert.equal(r.pdf.published, '2026-03-02T23:30:00-05:00');
-            assert.match(r.pdf.citation, /^Lovelace, Ada, and Grace Hopper\. "A Fixture About Café Data\." Fixture Times, 2 Mar\. 2026, 127\.0\.0\.1:\d+\/cited\.html\. Accessed \d+ Mar\. 2026\.$/);
+            assert.match(r.pdf.citation, /^Lovelace, Ada, and Grace Hopper\. "A Fixture About Café Data\." Fixture Times, 2 Mar 2026, 127\.0\.0\.1:\d+\/cited\.html\. Accessed \d+ Mar 2026\.$/);
             const doc = await PDFDocument.load(readFileSync(path), { updateMetadata: false });
             assert.equal(doc.getTitle(), 'A fixture about café data');
             assert.equal(doc.getAuthor(), 'Ada Lovelace; Grace Hopper');

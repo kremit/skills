@@ -31,13 +31,13 @@ Exit codes: 0 ok, 3 sentinel missing, 4 blocked, 5 error, 6 robots (`--respect-r
 
 - **`--pdf-style reader`** (default): the Readability article in a clean layout with its title, byline and date, or the `--selector` element. Ads, overlays and navigation are dropped, and so are some hero images. Scripts are off.
 - **`--pdf-style page`**: the live page as the browser prints it, ads included, with the citation added at the end. This is also the fallback when no article can be extracted.
-- **On the page:** a Work Cited block with the capture time and URL. Chrome also adds a footer with the URL and page numbers; Firefox doesn't support the footer.
+- **On the page:** a Citations block with the capture time and URL. Chrome also adds a footer with the URL and page numbers; Firefox doesn't support the footer.
 - **In the file:**
   - Info fields: Title, Author, Subject, Keywords, and CreationDate set to the capture time.
   - Custom Info keys: `SourceURL`, `RequestedURL`, `CapturedAt`, `PublishedAt`, `ModifiedAt`, `SiteName`, `Citation`, `CitationStyle`.
   - An XMP packet with the Dublin Core equivalents, including `dcterms:bibliographicCitation`.
   - `pdfinfo -custom FILE` lists the Info fields and `pdfinfo -meta FILE` shows the XMP.
-- **The citation** is MLA 9, built from JSON-LD, `citation_*` and Open Graph tags, then Readability's byline. The envelope's `pdf` object repeats it with `path, style, pages, bytes, title, authors, site, published, modified, source_url, captured_at`. Check the author and title before relying on it for a page with thin metadata.
+- **The citation** is MLA style with three-letter months such as `5 Nov 2026`, built from JSON-LD, `citation_*` and Open Graph tags, then Readability's byline. The envelope's `pdf` object repeats it with `path, style, pages, bytes, title, authors, site, published, modified, source_url, captured_at`. Check the author and title before relying on it for a page with thin metadata.
 - **No PDF is written** when the page is blocked or a sentinel is missing: `pdf` is `{path: null, skipped: ...}`. With reader style, a phrase dropped by extraction counts as missing, so retry with `--pdf-style page`. A non-HTML response or a render failure sets `error: "pdf: ..."` and exits 5.
 
 ## Profiles
@@ -51,6 +51,8 @@ Exit codes: 0 ok, 3 sentinel missing, 4 blocked, 5 error, 6 robots (`--respect-r
 ## Requirements
 
 Node 22, `/usr/bin/google-chrome` and `/usr/bin/firefox`, overridable with `WEB_FETCH_CHROME` and `WEB_FETCH_FIREFOX`. Run `npm ci` in the skill directory first.
+
+`pdf-lib` 1.17.1 stamps the PDF metadata and is possibly unmaintained: its last release was in 2022. It only parses PDFs Chrome or Firefox just produced, never untrusted files. If it breaks or encryption is needed, `@cantoo/pdf-lib` is the first alternative to try. Puppeteer and pdfmake can't write this metadata.
 
 ## Daemon
 

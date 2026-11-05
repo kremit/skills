@@ -2,7 +2,7 @@ import { writeFile } from 'node:fs/promises';
 import { PDFDict, PDFDocument, PDFHexString, PDFName } from 'pdf-lib';
 import { printableArticle } from './extract.mjs';
 
-const MONTHS = ['Jan.', 'Feb.', 'Mar.', 'Apr.', 'May', 'June', 'July', 'Aug.', 'Sept.', 'Oct.', 'Nov.', 'Dec.'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MINOR = new Set('a an and as at but by for from if in into nor of on or per so than the to up via vs with yet'.split(' '));
 const SUFFIX = /^(?:jr|sr|ii|iii|iv|phd|md)\.?$/i;
 
@@ -47,7 +47,7 @@ function mlaAuthors(authors) {
     return s.endsWith('.') ? s : `${s}.`;
 }
 
-/** MLA 9 web citation as plain text, plus HTML with the container in italics. */
+/** MLA-style web citation with three-letter months, as plain text, plus HTML with the container in italics. */
 export function mlaCitation(meta, accessed) {
     const title = titleCase(meta.title || meta.site || meta.url);
     const quoted = `"${title}${/[.?!]$/.test(title) ? '' : '.'}"`;
@@ -89,7 +89,7 @@ a { color: inherit; }
 </style></head><body>
 <div class="site">${esc(meta.site)}</div><h1>${esc(meta.title)}</h1><div class="byline">${esc(byline)}</div>
 <main>${article.html}</main>
-<div class="cite"><p><b>Work Cited</b></p><p class="work">${citation.html}</p>
+<div class="cite"><p><b>Citations</b></p><p class="work">${citation.html}</p>
 <p>Captured ${esc(capturedAt)} from ${esc(meta.url)}</p></div></body></html>`;
 }
 
@@ -133,7 +133,7 @@ export async function stampMetadata(bytes, meta, citation, capturedAt) {
     const info = doc.context.lookup(doc.context.trailerInfo.Info, PDFDict);
     const custom = {
         SourceURL: meta.url, RequestedURL: meta.requested, CapturedAt: capturedAt, PublishedAt: meta.published,
-        ModifiedAt: meta.modified, SiteName: meta.site, Citation: citation.text, CitationStyle: 'MLA 9',
+        ModifiedAt: meta.modified, SiteName: meta.site, Citation: citation.text, CitationStyle: 'MLA',
     };
     for (const [k, v] of Object.entries(custom)) {
         if (v) info.set(PDFName.of(k), PDFHexString.fromText(v));
@@ -150,7 +150,7 @@ async function appendCitation(page, citation) {
         div.style.cssText = 'margin:2em 1em;padding-top:.8em;border-top:1px solid #999;font:9pt/1.4 Georgia,serif;color:#111;background:#fff';
         div.innerHTML = html;
         document.body.append(div);
-    }, `<b>Work Cited</b><br>${citation.html}`);
+    }, `<b>Citations</b><br>${citation.html}`);
 }
 
 /** Prints the loaded page, stamps its metadata and writes it to path. */
