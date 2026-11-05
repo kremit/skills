@@ -28,7 +28,17 @@ const STUCK = '<!doctype html><html><head><title>Just a moment...</title></head>
 const BUSY = `<!doctype html><html><head><title>Busy</title></head><body><h1>Busy page</h1><p>BUSYCONTENT is here.</p>
 <script>setInterval(() => fetch('/ping?' + Date.now()).catch(() => {}), 200);</script></body></html>`;
 
+const CITED = ARTICLE.replace('<head>', `<head><meta charset="utf-8"><meta property="og:site_name" content="Fixture Times"><link rel="canonical" href="/cited.html">
+<script type="application/ld+json">${JSON.stringify({ '@graph': [{ '@type': 'NewsArticle', headline: 'A fixture about café data', datePublished: '2026-03-02T23:30:00-05:00', dateModified: '2026-03-03T01:00:00Z', description: 'Short summary.', author: [{ name: 'Ada Lovelace' }, { name: 'Grace Hopper' }] }] })}</script>`);
+
+const HIDDEN_CAPTCHA = ARTICLE.replace('<article>', '<iframe src="/google.com/recaptcha/api2/aframe" style="display:none"></iframe><article>');
+
+const VISIBLE_CAPTCHA = ARTICLE.replace('<article>', '<iframe src="/google.com/recaptcha/api2/anchor?size=normal" width="300" height="80"></iframe><article>');
+
 const ROUTES = {
+    '/cited.html': [200, 'text/html', CITED],
+    '/captcha-hidden.html': [200, 'text/html', HIDDEN_CAPTCHA],
+    '/captcha-visible.html': [200, 'text/html', VISIBLE_CAPTCHA],
     '/article.html': [200, 'text/html', ARTICLE],
     '/private/page.html': [200, 'text/html', ARTICLE],
     '/lazy.html': [200, 'text/html', LAZY],

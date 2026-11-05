@@ -1,6 +1,7 @@
 import { readdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
-import { extractContent, pageText } from './extract.mjs';
+import { extractContent, loadLazyImages, pageText } from './extract.mjs';
+import { renderPdf } from './pdf.mjs';
 import { missingPhrases } from './util.mjs';
 
 const CHALLENGE_TITLE = 'just a moment|attention required|verify you are human|are you a robot|access denied|checking your browser';
@@ -23,7 +24,13 @@ export async function detectChallenge(page) {
             const srcs = Array.from(document.querySelectorAll('iframe')).map((f) => f.src || '');
             if (srcs.some((s) => s.includes('challenges.cloudflare.com'))) return 'cloudflare';
             if (srcs.some((s) => s.includes('hcaptcha.com'))) return 'hcaptcha';
-            if (srcs.some((s) => s.includes('google.com/recaptcha'))) return 'recaptcha';
+            // sites load reCAPTCHA for forms; only a rendered widget is a challenge, not its hidden helpers
+            const visible = (f) => {
+                const r = f.getBoundingClientRect();
+                return r.width > 1 && r.height > 1 && getComputedStyle(f).visibility === 'visible';
+            };
+            const widget = (f) => (f.src || '').includes('google.com/recaptcha') && !/\/aframe|size=invisible/.test(f.src) && visible(f);
+            if (Array.from(document.querySelectorAll('iframe')).some(widget)) return 'recaptcha';
             return null;
         }, CHALLENGE_TITLE);
     } catch {
@@ -111,13 +118,13 @@ export async function fetchPage(browser, url, opts = {}) {
     const {
         engine = 'chrome', waitFor = 'networkidle', timeoutMs = 30000, scroll = 0, sentinels = [],
         format = 'md', selector = null, noExtract = false, maxChars = 100000, screenshot = null,
-        headed = false, challengeWaitMs = 15000, downloadsDir = null,
+        headed = false, challengeWaitMs = 15000, downloadsDir = null, pdf = null, pdfStyle = 'reader', fetchedAt = null,
     } = opts;
     const deadline = Date.now() + timeoutMs;
     const left = () => Math.max(1, deadline - Date.now());
     const result = {
         final_url: url, status: null, content_type: null, title: null, blocked: false, challenge: null,
-        sentinel: null, truncated: false, screenshot: null, content: '', error: null,
+        sentinel: null, truncated: false, screenshot: null, pdf: null, content: '', error: null,
     };
     const page = await browser.newPage();
     let lastStatus = null;
@@ -203,6 +210,7 @@ export async function fetchPage(browser, url, opts = {}) {
                 result.truncated = true;
             }
             if (sentinels.length) result.sentinel = { phrases: sentinels, missing: missingPhrases(sentinels, result.content), notes: [] };
+            if (pdf) result.error = 'pdf: not an HTML page';
             return result;
         }
         if (ct && !isHtml(ct)) {
@@ -276,6 +284,7 @@ export async function fetchPage(browser, url, opts = {}) {
                     await sleep(250);
                 }
             }
+            if (pdf && !result.blocked) await loadLazyImages(page, Math.min(10000, left())).catch(() => {});
             // freeze the page like the stop button: pending requests end, the DOM stays
             await page.evaluate(() => window.stop()).catch(() => {});
             return await extractContent(page, { format, selector, noExtract });
@@ -320,6 +329,20 @@ export async function fetchPage(browser, url, opts = {}) {
             }
         }
         result.final_url = finalUrl();
+        if (pdf) {
+            const missing = result.sentinel ? (pdfStyle === 'page' ? missingPhrases(result.sentinel.missing, await safeText(page)) : result.sentinel.missing) : [];
+            if (result.blocked || missing.length) {
+                result.pdf = { path: null, skipped: result.blocked ? 'blocked' : 'sentinel missing' };
+            } else {
+                try {
+                    result.pdf = await renderPdf(browser, page, {
+                        path: pdf, style: pdfStyle, selector, finalUrl: result.final_url, requestedUrl: url, fetchedAt, timeoutMs: Math.max(left(), 20000),
+                    });
+                } catch (e) {
+                    result.error = `pdf: ${e.message}`;
+                }
+            }
+        }
         return result;
     } finally {
         await closePage(page);

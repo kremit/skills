@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { PDFDict, PDFDocument, PDFName } from 'pdf-lib';
 import puppeteer from 'puppeteer-core';
 import { launchOptions } from '../lib/browser.mjs';
 import { fetchPage } from '../lib/fetch.mjs';
@@ -57,6 +58,54 @@ for (const engine of ['chrome', 'firefox']) {
             const r = await go('/article.html', { sentinels: ['NOT-ON-PAGE', 'NAVLINK', 'foo_bar_baz'], timeoutMs: 4000 });
             assert.deepEqual(r.sentinel.missing, ['NOT-ON-PAGE', 'NAVLINK']);
             assert.deepEqual(r.sentinel.notes, [{ phrase: 'NAVLINK', note: 'in page, dropped by extraction' }]);
+        });
+
+        test('a hidden reCAPTCHA helper is not a challenge, a rendered widget is', async () => {
+            const hidden = await go('/captcha-hidden.html', { challengeWaitMs: 1000 });
+            assert.deepEqual([hidden.blocked, hidden.challenge], [false, null]);
+            const shown = await go('/captcha-visible.html', { challengeWaitMs: 1000 });
+            assert.deepEqual([shown.blocked, shown.challenge], [true, 'recaptcha']);
+        });
+
+        test('--pdf writes a reader PDF with citation metadata', async () => {
+            const path = join(dir, 'cited.pdf');
+            const fetchedAt = '2026-03-04T12:00:00.000Z';
+            const r = await go('/cited.html', { pdf: path, fetchedAt });
+            assert.equal(r.error, null);
+            assert.equal(r.pdf.style, 'reader');
+            assert.equal(r.pdf.published, '2026-03-02T23:30:00-05:00');
+            assert.match(r.pdf.citation, /^Lovelace, Ada, and Grace Hopper\. "A Fixture About Café Data\." Fixture Times, 2 Mar\. 2026, 127\.0\.0\.1:\d+\/cited\.html\. Accessed \d+ Mar\. 2026\.$/);
+            const doc = await PDFDocument.load(readFileSync(path), { updateMetadata: false });
+            assert.equal(doc.getTitle(), 'A fixture about café data');
+            assert.equal(doc.getAuthor(), 'Ada Lovelace; Grace Hopper');
+            assert.equal(doc.getCreator(), 'web-fetch');
+            assert.equal(doc.getCreationDate().toISOString(), fetchedAt);
+            const info = doc.context.lookup(doc.context.trailerInfo.Info, PDFDict);
+            assert.equal(info.lookup(PDFName.of('CapturedAt')).decodeText(), fetchedAt);
+            assert.equal(info.lookup(PDFName.of('Citation')).decodeText(), r.pdf.citation);
+            assert.ok(info.lookup(PDFName.of('SourceURL')).decodeText().endsWith('/cited.html'));
+            const stream = doc.context.lookup(doc.catalog.get(PDFName.of('Metadata')));
+            const xml = new TextDecoder().decode(stream.getContents());
+            assert.ok(xml.includes('café data'));
+            assert.ok(xml.includes('<dcterms:bibliographicCitation>'));
+        });
+
+        test('--pdf-style page prints the page itself', async () => {
+            const r = await go('/article.html', { pdf: join(dir, 'page.pdf'), pdfStyle: 'page' });
+            assert.equal(r.error, null);
+            assert.equal(r.pdf.style, 'page');
+            assert.ok(r.pdf.pages >= 1);
+        });
+
+        test('--pdf is skipped when blocked or a sentinel is missing, and errors on raw text', async () => {
+            const path = join(dir, 'skip.pdf');
+            const blocked = await go('/challenge-stuck.html', { pdf: path, challengeWaitMs: 1000 });
+            assert.deepEqual(blocked.pdf, { path: null, skipped: 'blocked' });
+            const missing = await go('/article.html', { pdf: path, sentinels: ['NOT ON THIS PAGE'], timeoutMs: 3000 });
+            assert.deepEqual(missing.pdf, { path: null, skipped: 'sentinel missing' });
+            assert.equal(existsSync(path), false);
+            const raw = await go('/data.json', { pdf: path });
+            assert.equal(raw.error, 'pdf: not an HTML page');
         });
 
         test('challenge that clears is followed', async () => {

@@ -13,7 +13,7 @@ Personal collection of Claude Code skills. Each directory with a `SKILL.md` is a
 
 ### Web
 
-- `web/web-fetch/`: fetch pages through your own headless Chrome or Firefox with sentinel checks, cloned profiles, a warm daemon and robots.txt reporting
+- `web/web-fetch/`: fetch pages through your own headless Chrome or Firefox with sentinel checks, print-ready PDFs with citation metadata, cloned profiles, a warm daemon and robots.txt reporting
 
 ### Productivity
 

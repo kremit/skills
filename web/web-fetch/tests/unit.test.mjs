@@ -11,6 +11,31 @@ import { checkRobots } from '../lib/robots.mjs';
 import { parseXrandr } from '../lib/display.mjs';
 import { resolveProfile, cloneProfile, firefoxDefaultFromIni } from '../lib/profile.mjs';
 import { statePath, acquireLock } from '../lib/state.mjs';
+import { mlaCitation, mlaPublished, titleCase } from '../lib/pdf.mjs';
+
+test('titleCase follows MLA and leaves acronyms alone', () => {
+    assert.equal(titleCase('Big Tech scrambles to offer voters a new AI deal'), 'Big Tech Scrambles to Offer Voters a New AI Deal');
+    assert.equal(titleCase('the iPhone: a look at it'), 'The iPhone: A Look at It');
+});
+
+test('mlaPublished keeps the publisher date and formats MLA months', () => {
+    assert.equal(mlaPublished('2026-09-02T23:30:00-05:00'), '2 Sept. 2026');
+    assert.equal(mlaPublished('2026-05'), 'May 2026');
+    assert.equal(mlaPublished('not a date'), null);
+    assert.equal(mlaPublished(null), null);
+});
+
+test('mlaCitation handles author counts, missing fields and punctuation', () => {
+    const base = { title: 'why it matters?', site: 'Site', url: 'https://example.com/a/', published: '2026-01-05', authors: [] };
+    const when = new Date(2026, 1, 3);
+    const cite = (o) => mlaCitation({ ...base, ...o }, when).text;
+    assert.equal(cite({}), '"Why It Matters?" Site, 5 Jan. 2026, example.com/a. Accessed 3 Feb. 2026.');
+    assert.ok(cite({ authors: ['Maria Curi'] }).startsWith('Curi, Maria. "'));
+    assert.ok(cite({ authors: ['A B', 'C D', 'E F'] }).startsWith('B, A, et al. "'));
+    assert.ok(cite({ authors: ['Martin Luther King Jr.'] }).startsWith('King, Martin Luther, Jr. "'));
+    assert.equal(cite({ published: null, site: null }), '"Why It Matters?" example.com/a. Accessed 3 Feb. 2026.');
+    assert.ok(mlaCitation({ ...base, site: 'A&B' }, when).html.includes('<i>A&#38;B</i>'));
+});
 
 test('parseDuration units and errors', () => {
     assert.equal(parseDuration('500ms'), 500);

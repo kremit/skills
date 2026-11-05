@@ -13,7 +13,7 @@ import { parseDuration, UsageError } from './util.mjs';
 const USAGE = `usage:
   web-fetch URL [--browser chrome|firefox] [--profile NAME|PATH] [--format md|text|html]
                 [--selector CSS] [--no-extract] [--sentinel PHRASE]... [--wait load|domcontentloaded|networkidle|CSS]
-                [--timeout 30s] [--scroll N] [--screenshot PATH] [--max-chars N] [--headed] [--display D]
+                [--timeout 30s] [--scroll N] [--screenshot PATH] [--pdf PATH] [--pdf-style reader|page] [--max-chars N] [--headed] [--display D]
                 [--viewport WxH] [--respect-robots] [--allow-private] [--no-daemon] [--raw]
   web-fetch --daemonize [--browser B] [--profile P] [--idle 30m] [--headed] [--display D] [--viewport WxH]
   web-fetch --status
@@ -33,6 +33,8 @@ const OPTIONS = {
     timeout: { type: 'string', default: '30s' },
     scroll: { type: 'string', default: '0' },
     screenshot: { type: 'string' },
+    pdf: { type: 'string' },
+    'pdf-style': { type: 'string', default: 'reader' },
     'max-chars': { type: 'string', default: '100000' },
     headed: { type: 'boolean', default: false },
     display: { type: 'string' },
@@ -66,6 +68,7 @@ export function parseCli(argv) {
     if (!['md', 'text', 'html'].includes(v.format)) throw new UsageError('--format must be md, text or html');
     const modes = ['daemonize', 'status', 'stop', 'clone-profile'].filter((m) => v[m]);
     if (modes.length > 1) throw new UsageError(`pick one of --${modes.join(', --')}`);
+    if (!['reader', 'page'].includes(v['pdf-style'])) throw new UsageError('--pdf-style must be reader or page');
     if (v.viewport) parseViewport(v.viewport);
     const opts = {
         mode: modes[0] || 'fetch',
@@ -79,6 +82,8 @@ export function parseCli(argv) {
         timeoutMs: parseDuration(v.timeout),
         scroll: int('scroll'),
         screenshot: v.screenshot ? resolve(v.screenshot) : null,
+        pdf: v.pdf ? resolve(v.pdf) : null,
+        pdfStyle: v['pdf-style'],
         maxChars: int('max-chars'),
         headed: v.headed,
         display: v.display ?? null,
@@ -97,7 +102,7 @@ export function parseCli(argv) {
 }
 
 export function exitCodeFor(env) {
-    if (env.error && /^(navigation|unsupported|wait|selector|extract|launch)/.test(env.error)) return 5;
+    if (env.error && /^(navigation|unsupported|wait|selector|extract|launch|pdf)/.test(env.error)) return 5;
     if (env.blocked) return 4;
     if (typeof env.status === 'number' && env.status >= 400) return 5;
     if (env.sentinel && env.sentinel.missing.length) return 3;
@@ -123,7 +128,7 @@ async function cmdFetch(opts, stdout) {
         url, final_url: null, status: null, content_type: null, title: null, fetched_at: new Date().toISOString(),
         browser: opts.engine, profile: opts.profileArg, daemon: false, browser_pid: null, elapsed_ms: null,
         blocked: false, challenge: null, sentinel: null, robots: null, truncated: false, screenshot: null,
-        error: null, content: '',
+        pdf: null, error: null, content: '',
     };
     const guard = await checkUrl(url, { allowPrivate: opts.allowPrivate });
     if (!guard.ok) {
@@ -154,8 +159,8 @@ async function cmdFetch(opts, stdout) {
                 env.elapsed_ms = Date.now() - started;
                 return await emit(env, 6, opts, stdout);
             }
-            const r = await fetchPage(handle.browser, url, { ...opts, downloadsDir: join(profile.dir, 'downloads') });
-            for (const k of ['final_url', 'status', 'content_type', 'title', 'blocked', 'challenge', 'sentinel', 'truncated', 'screenshot', 'error', 'content']) {
+            const r = await fetchPage(handle.browser, url, { ...opts, fetchedAt: env.fetched_at, downloadsDir: join(profile.dir, 'downloads') });
+            for (const k of ['final_url', 'status', 'content_type', 'title', 'blocked', 'challenge', 'sentinel', 'truncated', 'screenshot', 'pdf', 'error', 'content']) {
                 env[k] = r[k];
             }
         } finally {
