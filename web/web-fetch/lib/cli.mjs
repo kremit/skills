@@ -2,7 +2,7 @@ import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { openBrowser, parseViewport } from './browser.mjs';
 import { startDaemon, stopDaemon } from './daemon.mjs';
-import { fetchPage } from './fetch.mjs';
+import { DEFAULT_MAX_REDIRECTS, fetchPage } from './fetch.mjs';
 import { checkUrl } from './guard.mjs';
 import { dirs } from './paths.mjs';
 import { cloneProfile, defaultCloneSource, resolveProfile } from './profile.mjs';
@@ -13,7 +13,7 @@ import { parseDuration, UsageError } from './util.mjs';
 const USAGE = `usage:
   web-fetch URL [--browser chrome|firefox] [--profile NAME|PATH] [--format md|text|html]
                 [--selector CSS] [--no-extract] [--sentinel PHRASE]... [--wait load|domcontentloaded|networkidle|CSS]
-                [--timeout 30s] [--scroll N] [--screenshot PATH] [--pdf PATH] [--pdf-style reader|page] [--max-chars N] [--headed] [--display D]
+                [--timeout 30s] [--scroll N] [--screenshot PATH] [--pdf PATH] [--pdf-style reader|page] [--max-chars N] [--max-redirects N] [--headed] [--display D]
                 [--viewport WxH] [--respect-robots] [--allow-private] [--no-daemon] [--raw]
   web-fetch --daemonize [--browser B] [--profile P] [--idle 30m] [--headed] [--display D] [--viewport WxH]
   web-fetch --status
@@ -36,6 +36,7 @@ const OPTIONS = {
     pdf: { type: 'string' },
     'pdf-style': { type: 'string', default: 'reader' },
     'max-chars': { type: 'string', default: '100000' },
+    'max-redirects': { type: 'string', default: String(DEFAULT_MAX_REDIRECTS) },
     headed: { type: 'boolean', default: false },
     display: { type: 'string' },
     viewport: { type: 'string' },
@@ -85,6 +86,7 @@ export function parseCli(argv) {
         pdf: v.pdf ? resolve(v.pdf) : null,
         pdfStyle: v['pdf-style'],
         maxChars: int('max-chars'),
+        maxRedirects: int('max-redirects'),
         headed: v.headed,
         display: v.display ?? null,
         viewport: v.viewport ?? null,

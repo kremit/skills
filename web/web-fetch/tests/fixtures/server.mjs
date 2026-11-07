@@ -78,6 +78,12 @@ export function startServer() {
                 res.end();
                 return;
             }
+            if (path === '/binary-redirect') {
+                // Google's Lens upload link answers like this
+                res.writeHead(303, { location: '/article.html', 'content-type': 'application/binary' });
+                res.end();
+                return;
+            }
             const hit = ROUTES[path];
             if (!hit) {
                 res.writeHead(404, { 'content-type': 'text/plain' });

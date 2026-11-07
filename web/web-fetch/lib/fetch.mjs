@@ -7,7 +7,7 @@ import { missingPhrases } from './util.mjs';
 const CHALLENGE_TITLE = 'just a moment|attention required|verify you are human|are you a robot|access denied|checking your browser';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // HTTP 30x hops on the initial navigation; JS and meta redirects from challenges are not counted
-const MAX_REDIRECTS = 3;
+export const DEFAULT_MAX_REDIRECTS = 5;
 
 const isHtml = (ct) => /html/i.test(ct);
 // text types returned as-is; +json/+xml suffixes, but not binaries like vnd.openxmlformats
@@ -119,6 +119,7 @@ export async function fetchPage(browser, url, opts = {}) {
         engine = 'chrome', waitFor = 'networkidle', timeoutMs = 30000, scroll = 0, sentinels = [],
         format = 'md', selector = null, noExtract = false, maxChars = 100000, screenshot = null,
         headed = false, challengeWaitMs = 15000, downloadsDir = null, pdf = null, pdfStyle = 'reader', fetchedAt = null,
+        maxRedirects = DEFAULT_MAX_REDIRECTS,
     } = opts;
     const deadline = Date.now() + timeoutMs;
     const left = () => Math.max(1, deadline - Date.now());
@@ -148,6 +149,8 @@ export async function fetchPage(browser, url, opts = {}) {
             if (r.request().isNavigationRequest() && r.frame() === page.mainFrame()) {
                 lastStatus = r.status();
                 navResponse = r;
+                // a redirect's own content type says nothing about the page it leads to
+                if (r.status() >= 300 && r.status() < 400) return;
                 const ct = r.headers()['content-type'] || '';
                 if (ct && !isHtml(ct) && !isRawText(ct)) unsupportedResolve(ct);
                 if (isForeignText(ct)) foreignResolve(r);
@@ -192,10 +195,10 @@ export async function fetchPage(browser, url, opts = {}) {
             return result;
         }
         const hops = response ? response.request().redirectChain().length : 0;
-        if (hops > MAX_REDIRECTS) {
+        if (hops > maxRedirects) {
             result.final_url = finalUrl();
             result.status = response.status();
-            result.error = `navigation: too many redirects (${hops} > ${MAX_REDIRECTS})`;
+            result.error = `navigation: too many redirects (${hops} > ${maxRedirects})`;
             return result;
         }
         const ct = (response && (plainServed.get(response.url()) || response.headers()['content-type'])) || '';

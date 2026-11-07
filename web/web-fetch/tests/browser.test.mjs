@@ -125,12 +125,22 @@ for (const engine of ['chrome', 'firefox']) {
             assert.deepEqual([r.status, r.blocked], [403, true]);
         });
 
-        test('up to 3 HTTP redirects are followed, a 4th is refused', async () => {
-            const ok = await go('/r/3');
+        test('a redirect with a binary content type still lands on the page', async () => {
+            const r = await go('/binary-redirect');
+            assert.equal(r.error, null);
+            assert.equal(r.status, 200);
+            assert.ok(r.final_url.endsWith('/article.html'));
+            assert.match(r.content, /UNIQUEARTICLEPHRASE/);
+        });
+
+        test('up to 5 HTTP redirects are followed by default, a 6th is refused', async () => {
+            const ok = await go('/r/5');
             assert.equal(ok.error, null);
             assert.match(ok.content, /UNIQUEARTICLEPHRASE/);
-            const tooMany = await go('/r/4');
-            assert.match(tooMany.error, /^navigation: too many redirects \(4 > 3\)/);
+            const capped = await go('/r/3', { maxRedirects: 2 });
+            assert.match(capped.error, /^navigation: too many redirects \(3 > 2\)/);
+            const tooMany = await go('/r/6');
+            assert.match(tooMany.error, /^navigation: too many redirects \(6 > 5\)/);
             assert.equal(tooMany.content, '');
         });
 
