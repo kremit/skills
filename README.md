@@ -15,6 +15,10 @@ Personal collection of Claude Code skills. Each directory with a `SKILL.md` is a
 
 - `web/web-fetch/`: fetch pages through your own headless Chrome or Firefox with sentinel checks, print-ready PDFs with citation metadata, cloned profiles, a warm daemon and robots.txt reporting
 
+### Desktop
+
+- `desktop/lens/`: circle part of the screen or an image, then read its text or look it up with Google Lens, through [lasso-search](https://github.com/kremit/lasso-search)
+
 ### Productivity
 
 - `trello/`, `trello-daily-summary/`, `defer/`, `defer-trello/`: Trello access, daily summary, and deferred tasks
