@@ -6,6 +6,7 @@
 #   1. registry scan   inbound work waiting on you (GitHub), CI, unregistered repos
 #   2. registry repos  last push and open PRs for every GitHub repo in the CSV
 #   3. local trees     uncommitted work, unpushed commits, stale branches
+#   4. security        npm and composer audits of local clones and registry repos
 #   Self-hosted GitLab is not wired yet; the registry scan prints a stub line.
 #
 # Usage:
@@ -15,6 +16,7 @@
 #   run.sh local      local tree check only
 #   run.sh hosted     registry repo report only
 #   run.sh update     refresh CSV git HEADs and DNS first, then the registry repo report
+#   run.sh security   dependency audits only
 #
 # Review days: project_review_days in $VPA_DIR/vpa_config.json (VPA_DIR defaults to ~/vpa)
 # Registry: ~/dev/projects/meta/projects_report.csv (this script never writes it)
@@ -26,6 +28,8 @@ OUT="$VPA_DIR/out"
 SCAN_OUT="$OUT/registry_scan_latest.txt"
 HOSTED_OUT="$OUT/project_review_latest.txt"
 TREE_OUT="$OUT/local_tree_latest.txt"
+SECURITY_OUT="$OUT/security_latest.txt"
+AUDIT="$(dirname "$(readlink -f "$0")")/../security/project-security/audit.py"
 
 is_review_day() {
 	local today
@@ -50,6 +54,10 @@ run_tree() {
 	"$VPA_DIR/local_tree_check.sh" "${args[@]}"
 }
 
+run_security() {
+	python3 "$AUDIT" --registry "$CSV" --json "$OUT/security_latest.json" | tee "$SECURITY_OUT"
+}
+
 section() {
 	echo
 	echo "===== $1 ====="
@@ -62,28 +70,34 @@ is_review_day && discover="discover"
 
 case "$mode" in
 	all)
-		section "1 of 3: Registry scan"
+		section "1 of 4: Registry scan"
 		run_scan "$discover"
-		section "2 of 3: Registry repos"
+		section "2 of 4: Registry repos"
 		run_hosted
-		section "3 of 3: Local trees"
+		section "3 of 4: Local trees"
 		run_tree
+		section "4 of 4: Dependency security"
+		run_security
 		;;
 	scan)
-		section "1 of 3: Registry scan (full discovery)"
+		section "1 of 4: Registry scan (full discovery)"
 		run_scan discover
-		section "2 of 3: Registry repos"
+		section "2 of 4: Registry repos"
 		run_hosted
-		section "3 of 3: Local trees"
+		section "3 of 4: Local trees"
 		run_tree
+		section "4 of 4: Dependency security"
+		run_security
 		;;
 	fetch)
-		section "1 of 3: Registry scan"
+		section "1 of 4: Registry scan"
 		run_scan "$discover"
-		section "2 of 3: Registry repos"
+		section "2 of 4: Registry repos"
 		run_hosted
-		section "3 of 3: Local trees (fetched)"
+		section "3 of 4: Local trees (fetched)"
 		run_tree fetch
+		section "4 of 4: Dependency security"
+		run_security
 		;;
 	local)
 		run_tree
@@ -91,13 +105,16 @@ case "$mode" in
 	hosted)
 		run_hosted
 		;;
+	security)
+		run_security
+		;;
 	update)
 		bash "$VPA_DIR/update_projects.sh" --csv "$CSV"
 		section "Registry repos"
 		run_hosted
 		;;
 	*)
-		echo "Usage: run.sh [scan|fetch|local|hosted|update]" >&2
+		echo "Usage: run.sh [scan|fetch|local|hosted|update|security]" >&2
 		exit 2
 		;;
 esac

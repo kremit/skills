@@ -25,6 +25,10 @@ Personal collection of Claude Code skills. Each directory with a `SKILL.md` is a
 - `notification-checkup/`: daily notification review ritual
 - `mailsubjects/`, `vpa/`, `project-review/`: workflow docs and scripts
 
+### Security
+
+- `security/project-security/`: npm and composer audits of local project clones and registry GitHub repos, from their lockfiles
+
 ### Data
 
 - `data/dataset-recon/`: reconnaissance on an unfamiliar dataset: gather scattered docs, decode a sample (GDAL, wgrib2, ncdump, pandas) and write a short profile of contents, grid, size, cadence and quirks

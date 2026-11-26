@@ -9,7 +9,7 @@ Purpose: assigned work arrives by email, text, and notifications and gets missed
 
 ## Run
 
-    ~/.claude/skills/project-review/run.sh [scan|fetch|local|hosted|update]
+    ~/.claude/skills/project-review/run.sh [scan|fetch|local|hosted|update|security]
 
 - no arg: all layers. Repo discovery runs only on review days.
 - `scan`: all layers with full discovery of repos missing from the registry
@@ -17,12 +17,14 @@ Purpose: assigned work arrives by email, text, and notifications and gets missed
 - `local`: local tree check only
 - `hosted`: registry repo report only
 - `update`: refresh CSV git HEADs and DNS, then the registry repo report
+- `security`: dependency audits only, also what to run for a "project security review"
 
 ## Layers
 
 1. Registry scan (`$VPA_DIR/registry_scan.sh`): waiting on you, assigned issues, your open PRs, CI, noise count, repos not in the registry, GitLab stub.
 2. Registry repos (`project_review.sh`): last push and open PRs for each GitHub repo in the CSV.
 3. Local trees (`local_tree_check.sh`): work clones, as configured in `$VPA_DIR/local_tree_check.sh`.
+4. Dependency security (the project-security skill): `npm audit` and `composer audit` on local clones and registry GitHub repos. Report critical and high findings after WAITING ON YOU.
 
 Self-hosted GitLab is not wired yet. Token setup is planned; until then the scan prints "GitLab: not configured".
 
@@ -37,6 +39,6 @@ Self-hosted GitLab is not wired yet. Token setup is planned; until then the scan
 
 ## Files
 
-- Outputs: `out/registry_scan_latest.txt`, `out/project_review_latest.txt`, `out/local_tree_latest.txt` under `$VPA_DIR`
+- Outputs: `out/registry_scan_latest.txt`, `out/project_review_latest.txt`, `out/local_tree_latest.txt`, `out/security_latest.txt` and `.json` under `$VPA_DIR`
 - Review days: `project_review_days` in `$VPA_DIR/vpa_config.json`
 - `VPA_DIR` defaults to `~/vpa`; export it to point elsewhere
