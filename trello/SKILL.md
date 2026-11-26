@@ -15,6 +15,21 @@ export TRELLO_API_KEY="your-api-key"   # https://trello.com/app-key
 export TRELLO_TOKEN="your-token"       # click "Token" on the same page
 ```
 
+### Read-only mode
+
+For research and reporting, where nothing should change on Trello, use both layers:
+
+1. **A read-only token.** Trello rejects every write from a token issued with `scope=read`, whatever the client sends. Print the authorize URL, open it, approve, and export the token it shows:
+
+    ```bash
+    python3 trello_api.py ro-token-url 30   # days until it expires; 0 = never
+    export TRELLO_RO_TOKEN="..."
+    ```
+
+2. **`TRELLO_READONLY=1`.** `trello_api.py` then uses `TRELLO_RO_TOKEN` when set and raises `TrelloReadOnlyError` on any POST or PUT before a request is sent.
+
+Check which token is active and what it can do: `TRELLO_READONLY=1 python3 trello_api.py token-scope` (`can_write` should be `false`). With curl, read-only means GET requests only, with `$TRELLO_RO_TOKEN`.
+
 ---
 
 ## Trello Inbox (Global Capture)

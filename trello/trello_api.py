@@ -9,12 +9,19 @@ Required env vars:
   TRELLO_API_KEY
   TRELLO_TOKEN
 
+Read-only mode (optional):
+  TRELLO_READONLY=1   refuse POST/PUT/DELETE in this client before any request is sent
+  TRELLO_RO_TOKEN     a token issued with scope=read; used instead of TRELLO_TOKEN in
+                      read-only mode, so Trello itself also rejects writes
+
 Usage as a CLI tool:
   python trello_api.py boards
   python trello_api.py lists <boardId>
   python trello_api.py cards <listId>
   python trello_api.py search <query>
   python trello_api.py card <cardId>
+  python trello_api.py ro-token-url [days]   print the URL that issues a read-only token
+  python trello_api.py token-scope           show the active token's read/write permissions
 """
 
 import os
@@ -26,14 +33,31 @@ from functools import lru_cache
 from zoneinfo import ZoneInfo
 
 BASE = "https://api.trello.com/1"
+READONLY = os.environ.get("TRELLO_READONLY", "").lower() in ("1", "true", "yes")
+
+
+class TrelloReadOnlyError(RuntimeError):
+    """Raised when a write is attempted with TRELLO_READONLY set."""
+
+
+def _token() -> str:
+    if READONLY and os.environ.get("TRELLO_RO_TOKEN"):
+        return os.environ["TRELLO_RO_TOKEN"]
+    return os.environ["TRELLO_TOKEN"]
+
+
 AUTH = {
     "key": os.environ["TRELLO_API_KEY"],
-    "token": os.environ["TRELLO_TOKEN"],
+    "token": _token(),
 }
 
 # ---------------------------------------------------------------------------
 # Internal
 # ---------------------------------------------------------------------------
+
+def _assert_writable(method: str, path: str) -> None:
+    if READONLY:
+        raise TrelloReadOnlyError(f"TRELLO_READONLY is set: refused {method} {path}")
 
 def _get(path: str, **params) -> any:
     r = requests.get(f"{BASE}{path}", params={**AUTH, **params})
@@ -41,14 +65,38 @@ def _get(path: str, **params) -> any:
     return r.json()
 
 def _post(path: str, data: dict) -> any:
+    _assert_writable("POST", path)
     r = requests.post(f"{BASE}{path}", params=AUTH, data=data)
     r.raise_for_status()
     return r.json()
 
 def _put(path: str, data: dict) -> any:
+    _assert_writable("PUT", path)
     r = requests.put(f"{BASE}{path}", params=AUTH, data=data)
     r.raise_for_status()
     return r.json()
+
+
+def ro_token_url(days: int = 30, app_name: str = "read-only research") -> str:
+    """URL that asks Trello to issue a token limited to scope=read."""
+    expiration = "never" if days <= 0 else f"{days}days"
+    return (
+        "https://trello.com/1/authorize?response_type=token&scope=read"
+        f"&expiration={expiration}&name={requests.utils.quote(app_name)}&key={AUTH['key']}"
+    )
+
+
+def token_scope() -> dict:
+    """Read/write permissions of the active token, as Trello reports them."""
+    t = _get(f"/tokens/{AUTH['token']}", fields="permissions,dateExpires")
+    perms = t.get("permissions", [])
+    return {
+        "readonly_mode": READONLY,
+        "token_var": "TRELLO_RO_TOKEN" if AUTH["token"] == os.environ.get("TRELLO_RO_TOKEN") else "TRELLO_TOKEN",
+        "can_write": any(p.get("write") for p in perms),
+        "expires": t.get("dateExpires"),
+        "permissions": perms,
+    }
 
 # ---------------------------------------------------------------------------
 # ID Lookups
@@ -464,6 +512,12 @@ if __name__ == "__main__":
 
     elif cmd == "card" and len(args) == 2:
         _print(get_card(args[1]))
+
+    elif cmd == "ro-token-url":
+        print(ro_token_url(int(args[1]) if len(args) == 2 else 30))
+
+    elif cmd == "token-scope":
+        _print(token_scope())
 
     else:
         print(__doc__)
