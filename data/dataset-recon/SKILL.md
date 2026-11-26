@@ -104,4 +104,6 @@ Keep it to a screen or two:
 - <doc title> (<url>, <date>)
 ```
 
-Show the user the profile path and a three-line summary. Keep the sample unless the user wants it removed.
+## 7. Hand off
+
+Show the user the profile path and a three-line summary, then list **everything left on disk** in `$OUT/<short-name>/`: the sample files, decoder dumps, NetCDF conversions and any extracted archive members, with the folder's total size (`du -sh "$OUT/<short-name>"`) and the largest files. Ask whether to keep them or delete everything but `profile.md`. Keep them until the user answers. When dataset-recon runs inside another skill, such as research-assistant, return this list to the caller so it can report it.

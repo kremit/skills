@@ -32,6 +32,7 @@ Personal collection of Claude Code skills. Each directory with a `SKILL.md` is a
 ### Data
 
 - `data/dataset-recon/`: reconnaissance on an unfamiliar dataset: gather scattered docs, decode a sample (GDAL, wgrib2, ncdump, pandas) and write a short profile of contents, grid, size, cadence and quirks
+- `data/research-assistant/`: research a business or event topic across approved sources (web, Google Drive, email, Slack, Trello, read-only databases, local docs) after a short intake, with Sonnet gathering and one Opus review pass
 
 ### Sysadmin
 
